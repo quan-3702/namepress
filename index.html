@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NamePress – Name Tags &amp; Place Cards</title>
+  <meta name="description" content="Print name badges on sticker sheets and folded place cards for tables, from a simple list of names. Private and offline.">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <style id="pageRule"></style>
+  <style>.tpls{grid-template-columns:repeat(3,1fr)}.tpls button{aspect-ratio:86/55}</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icon-192.png" alt="" width="30" height="30"><span>NamePress</span></div>
+    <span class="tree-title"></span>
+    <div class="top-btns">
+      <button id="printBtn" class="tb">🖨 Print</button>
+      <button id="testBtn" class="tb">Print a test page</button>
+      <button id="moreBtn" class="tb">☰ More</button>
+      <button id="proBtn" class="pro-btn" hidden>★ Get Pro</button>
+    </div>
+    <div id="menu" class="menu" hidden>
+      <button id="ex1">Example: club name badges</button>
+      <button id="ex2">Example: wedding place cards</button>
+      <button id="resetBtn" class="danger">Start again…</button>
+      <a href="help.html" target="_blank" rel="noopener">❓ How to use NamePress</a>
+      <a href="mailto:thequan03072002@gmail.com?subject=NamePress%20feedback">✉ Feedback &amp; support</a>
+      <a href="https://apps.microsoft.com/detail/9PDLS6TMKHHQ" target="_blank" rel="noopener">More apps: TicketPress raffle tickets</a>
+      <a href="https://apps.microsoft.com/detail/9PJZFJ139JC2" target="_blank" rel="noopener">More apps: AddressPress envelope printer</a>
+    </div>
+    <input id="fileIn" type="file" accept="image/*" hidden>
+  </header>
+
+  <main class="layout">
+    <aside class="left">
+      <h2>1 · What to print</h2>
+      <div class="seg3" id="modes" style="grid-template-columns:1fr 1fr">
+        <button data-m="tag">Name badges</button>
+        <button data-m="card">Place cards</button>
+      </div>
+      <label class="field">Sheet<select id="sheet"></select></label>
+      <label class="field" id="startF">Start at badge no. (for a half-used sheet)<input id="start" type="text" inputmode="numeric" maxlength="2"></label>
+      <label class="check" id="bothF"><input id="both" type="checkbox"> Print the name on both sides of the fold</label>
+
+      <h2>2 · Names</h2>
+      <label class="field">One name on each line<textarea id="names" placeholder="Emily Johnson&#10;Michael Carter, Table 2&#10;Sophia Nguyen, Sales" spellcheck="false"></textarea></label>
+      <p class="hint">Add a comma to put a second line under the name, for example a table number or company.</p>
+      <p id="hint" class="hint"></p>
+      <label class="field">Line at the top<input id="top" type="text" maxlength="40" placeholder="HELLO my name is"></label>
+      <label class="field">Line at the bottom<input id="bottom" type="text" maxlength="50" placeholder="Event name (optional)"></label>
+
+      <h2>3 · Design</h2>
+      <div id="tpls" class="tpls"></div>
+      <div id="colors" class="swatches"></div>
+      <label class="field">Lettering for the name<select id="font"><option value="modern">Modern</option><option value="classic">Classic</option><option value="script">Handwriting</option></select></label>
+      <div class="logo-row">
+        <button id="logoBtn" class="ghost">Add a logo picture…</button><span class="badge pro-only">PRO</span>
+        <button id="logoDel" class="ghost danger" hidden>Remove logo</button>
+      </div>
+
+      <div id="offF">
+        <h2>If the print is off-centre</h2>
+        <div class="two">
+          <label class="field">Move right (mm)<input id="dx" type="text" inputmode="decimal" maxlength="5"></label>
+          <label class="field">Move down (mm)<input id="dy" type="text" inputmode="decimal" maxlength="5"></label>
+        </div>
+        <p class="hint">Use minus numbers to move left or up. Try on plain paper first.</p>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div id="pager" class="pager"></div>
+      <div class="preview">
+        <button id="prev" class="nav" title="Previous sheet">‹</button>
+        <div id="page" style="height:100%;display:flex;align-items:center;justify-content:center;min-width:0;flex:1"></div>
+        <button id="next" class="nav" title="Next sheet">›</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="proDialog" class="dlg">
+    <h2>NamePress Pro</h2>
+    <p class="muted">One-time purchase. Yours forever on this Microsoft account. The free version never limits how often you print.</p>
+    <ul class="pro-list">
+      <li><strong>All 6 designs</strong> <span class="muted">(Free: 3)</span></li>
+      <li><strong>Any number of names at a time</strong> – a whole conference or wedding in one go <span class="muted">(Free: 24)</span></li>
+      <li><strong>Your own logo</strong> on every badge and card</li>
+    </ul>
+    <p id="proMsg" class="pro-msg" hidden></p>
+    <div class="row-btns">
+      <button id="buyBtn" class="primary">Unlock Pro</button>
+      <button id="restoreBtn" class="ghost">Restore purchase</button>
+      <button id="closePro" class="ghost">Not now</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="printArea"></div>
+  <script src="app.js"></script>
+</body>
+</html>
