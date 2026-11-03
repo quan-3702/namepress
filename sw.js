@@ -1,4 +1,4 @@
-const CACHE = 'namepress-v7';
+const CACHE = 'namepress-v8';
 const ASSETS = ['./', 'index.html', 'help.html', 'privacy.html', 'style.css', 'app.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'];
 
 self.addEventListener('install', (e) => {
