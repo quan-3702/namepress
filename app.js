@@ -7,7 +7,7 @@ const PRO_SKU = 'namepress_pro';
 const PRO_IDS = [PRO_SKU];
 let STORE_URL = 'https://apps.microsoft.com/detail/9NRRLVDK5TH3';
 let proAvailable = false; // Pro limits apply only when the Store actually sells the add-on
-try { if ('getDigitalGoodsService' in window && localStorage.getItem('namepress-proavail') === '1') proAvailable = true; } catch (_) {} // keep Pro limits when offline
+proAvailable = true; // owner's rule: Pro is never free – free limits apply everywhere (website, Store, offline) until Pro is bought
 let proSku = PRO_SKU;
 let isPro = false;
 try { isPro = localStorage.getItem('namepress-pro') === '1'; } catch (_) {}
@@ -180,7 +180,6 @@ async function checkPro() {
   if (!svc) return false;
   try {
     const details = await svc.getDetails(PRO_IDS).catch(() => []);
-    if (details.length) { proAvailable = true; try { localStorage.setItem('namepress-proavail', '1'); } catch (_) {} }
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
@@ -200,6 +199,7 @@ async function openPro(reason) {
     $('restoreBtn').hidden = false;
     try {
       const [d] = await svc.getDetails([proSku]);
+      if (!d) proMessage((reason ? reason + ' ' : '') + 'Pro is being added to the Microsoft Store and will be on sale very soon – please check again in a day or two.');
       const price = d && d.price ? new Intl.NumberFormat(undefined, { style: 'currency', currency: d.price.currency }).format(Number(d.price.value)) : '';
       $('buyBtn').textContent = price ? `Unlock Pro – ${price}` : 'Unlock Pro';
     } catch (_) { $('buyBtn').textContent = 'Unlock Pro'; }
@@ -412,7 +412,7 @@ if (typeof document !== 'undefined') (function () {
     },
   });
   $('ex1').onclick = () => { Object.assign(st, { mode: 'tag', tpl: 'hello', top: 'HELLO my name is', bottom: 'Riverside Book Club', names: 'Margaret Ellis\nDavid Brooks\nSophia Nguyen\nRobert Miller\nHelen Carter\nFrank Murphy' }); pageNo = 0; change(); };
-  $('ex2').onclick = () => { Object.assign(st, { mode: 'card', tpl: 'elegant', font: 'script', top: '', bottom: '', both: true, names: 'Emily Johnson, Table 1\nMichael Carter, Table 1\nLaura Bennett, Table 2\nJames Wilson, Table 2' }); pageNo = 0; change(); };
+  $('ex2').onclick = () => { Object.assign(st, { mode: 'card', tpl: unlocked() ? 'elegant' : 'classic', font: 'script', top: '', bottom: '', both: true, names: 'Emily Johnson, Table 1\nMichael Carter, Table 1\nLaura Bennett, Table 2\nJames Wilson, Table 2' }); pageNo = 0; change(); };
   $('resetBtn').onclick = () => { if (confirm('Clear all names and texts and start again?')) { try { localStorage.removeItem('namepress'); } catch (_) {} location.reload(); } };
   $('proBtn').onclick = () => { if (!isPro) openPro(''); };
   $('buyBtn').onclick = buyPro;
