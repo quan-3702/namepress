@@ -10,7 +10,21 @@ let proAvailable = false; // Pro limits apply only when the Store actually sells
 proAvailable = true; // owner's rule: Pro is never free – free limits apply everywhere (website, Store, offline) until Pro is bought
 let proSku = PRO_SKU;
 let isPro = false;
-try { isPro = localStorage.getItem('namepress-pro') === '1'; } catch (_) {}
+// the cached Pro flag is never trusted on the website (nothing can be bought there) and in the Store app only for 30 days
+// after the Store last confirmed the purchase (offline buyers stay Pro; after that the Store is asked again)
+const HAS_STORE = typeof window !== 'undefined' && 'getDigitalGoodsService' in window;
+const PRO_OK_MS = 30 * 864e5;
+function cachedPro() {
+  try {
+    if (!HAS_STORE || localStorage.getItem('namepress-pro') !== '1') return false;
+    const raw = localStorage.getItem('namepress-pro-ok');
+    if (raw == null) { localStorage.setItem('namepress-pro-ok', String(Date.now())); return true; } // a buyer from before this check counts as confirmed now, once
+    const ok = Number(raw);
+    return ok > 0 && ok <= Date.now() + 864e5 && Date.now() - ok < PRO_OK_MS;
+  } catch (_) { return false; }
+}
+function rememberPro(owned) { try { if (owned) { localStorage.setItem('namepress-pro', '1'); localStorage.setItem('namepress-pro-ok', String(Date.now())); } else { localStorage.removeItem('namepress-pro'); localStorage.removeItem('namepress-pro-ok'); } } catch (_) {} }
+isPro = cachedPro();
 // ---------- Import a list from Excel, CSV or the clipboard (shared by the Press apps) ----------
 // importList({ title, fields: [{ key, label, required, guess: /regex/ }], onDone(rows) })
 // rows = [{ key: value, ... }] – only non-empty rows.
@@ -159,7 +173,6 @@ async function billing() {
 }
 function setPro(v) {
   isPro = v;
-  try { localStorage.setItem('namepress-pro', v ? '1' : '0'); } catch (_) {}
   const b = $('proBtn');
   b.textContent = v ? '★ Pro' : '★ Get Pro';
   b.classList.toggle('is-pro', v);
@@ -183,7 +196,7 @@ async function checkPro() {
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
-    if (owned || details.length) { setPro(owned); return owned; }
+    if (owned || details.length) { rememberPro(owned); setPro(owned); return owned; }
     setPro(isPro); // Store did not answer (offline): keep what we knew
     return isPro;
   } catch (_) { return isPro; }
@@ -419,6 +432,7 @@ if (typeof document !== 'undefined') (function () {
   $('restoreBtn').onclick = async () => { proMessage((await checkPro()) ? 'Pro is unlocked. ★' : 'No purchase was found on this Microsoft account.'); };
   $('closePro').onclick = () => $('proDialog').close();
   window.addEventListener('resize', () => renderPage());
+  window.addEventListener('afterprint', () => { $('printArea').innerHTML = ''; });
   setPro(isPro);
   checkPro();
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
