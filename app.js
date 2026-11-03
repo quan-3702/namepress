@@ -7,6 +7,7 @@ const PRO_SKU = 'namepress_pro';
 const PRO_IDS = [PRO_SKU];
 let STORE_URL = 'https://apps.microsoft.com/detail/9NRRLVDK5TH3';
 let proAvailable = false; // Pro limits apply only when the Store actually sells the add-on
+try { if ('getDigitalGoodsService' in window && localStorage.getItem('namepress-proavail') === '1') proAvailable = true; } catch (_) {} // keep Pro limits when offline
 let proSku = PRO_SKU;
 let isPro = false;
 try { isPro = localStorage.getItem('namepress-pro') === '1'; } catch (_) {}
@@ -166,17 +167,26 @@ function setPro(v) {
   document.body.classList.toggle('unlocked', unlocked());
   if (typeof renderAll === 'function') renderAll();
 }
+async function checkProAfterBuy() {
+  for (let i = 0; i < 6; i++) {
+    if (await checkPro()) return true;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  proMessage('Thank you! If Pro is not unlocked within a minute, click “Restore purchase”.');
+  return false;
+}
 async function checkPro() {
   const svc = await billing();
   if (!svc) return false;
   try {
     const details = await svc.getDetails(PRO_IDS).catch(() => []);
-    proAvailable = details.length > 0;
+    if (details.length) { proAvailable = true; try { localStorage.setItem('namepress-proavail', '1'); } catch (_) {} }
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
-    setPro(owned);
-    return owned;
+    if (owned || details.length) { setPro(owned); return owned; }
+    setPro(isPro); // Store did not answer (offline): keep what we knew
+    return isPro;
   } catch (_) { return isPro; }
 }
 function proMessage(text) { const m = $('proMsg'); m.hidden = !text; m.textContent = text || ''; }
@@ -211,7 +221,7 @@ async function buyPro() {
     proMessage('Purchase could not be completed: ' + (e.message || e));
     return;
   }
-  if (await checkPro()) { proMessage('Thank you! Pro is unlocked. ★'); setTimeout(() => $('proDialog').close(), 1500); }
+  if (await checkProAfterBuy()) { proMessage('Thank you! Pro is unlocked. ★'); setTimeout(() => $('proDialog').close(), 1500); }
 }
 function needsPro(reason) {
   if (unlocked()) return false;
@@ -240,7 +250,9 @@ const tplLocked = (id) => !unlocked() && tplIndex(id) >= FREE_TPLS;
 let st = { mode: 'tag', sheet: 'us8', cardSheet: 'usc4', tpl: 'hello', color: COLORS[0], font: 'modern', top: 'HELLO my name is', bottom: '', names: '', start: 1, dx: 0, dy: 0, both: true, logo: '' };
 try { Object.assign(st, JSON.parse(localStorage.getItem('namepress') || '{}')); } catch (_) {}
 let saveTimer;
-function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { try { localStorage.setItem('namepress', JSON.stringify(st)); } catch (_) { toast('Could not save – the logo picture may be too large'); } }, 250); }
+function saveNow() { clearTimeout(saveTimer); try { localStorage.setItem('namepress', JSON.stringify(st)); } catch (_) { toast('Could not save – the logo picture may be too large'); } }
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 250); }
+if (typeof window !== 'undefined') window.addEventListener('pagehide', saveNow); // closing the window right after a change must not lose it
 const num = (v, lo, hi, d) => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n >= lo && n <= hi ? n : d; };
 function people() { // "Name, detail" – the text after the first comma becomes the second line
   return String(st.names || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => { const i = l.indexOf(','); return i > 0 ? { name: l.slice(0, i).trim(), detail: l.slice(i + 1).trim() } : { name: l, detail: '' }; });
